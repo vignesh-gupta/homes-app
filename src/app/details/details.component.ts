@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { HousingLocation } from '../housing-location';
 import { HousingService } from '../housing.service';
@@ -6,7 +7,7 @@ import { HousingService } from '../housing.service';
 @Component({
   selector: 'app-details',
   standalone: true,
-  imports: [],
+  imports: [ReactiveFormsModule],
   template: `
     <article>
       <img
@@ -34,7 +35,18 @@ import { HousingService } from '../housing.service';
 
       <section class="listing-apply">
         <h2 class="section-heading">Apply to live here!</h2>
-        <button class="primary" type="button">Apply</button>
+        <form [formGroup]="applyForm" (submit)="submitApplication()">
+          <label id="firstName">First Name</label>
+          <input type="text" id="first-name" formControlName="firstName" />
+
+          <label id="lastName">Last Name</label>
+          <input type="text" id="last-name" formControlName="lastName" />
+
+          <label id="email">Email</label>
+          <input type="email" id="email" formControlName="email" />
+
+          <button type="submit" class="primary">Apply</button>
+        </form>
       </section>
     </article>
   `,
@@ -42,11 +54,30 @@ import { HousingService } from '../housing.service';
 })
 export class DetailsComponent {
   route: ActivatedRoute = inject(ActivatedRoute);
-  housingService: HousingService = inject(HousingService);
+  housingService = inject(HousingService);
   housingLocation: HousingLocation | undefined;
+
+  applyForm = new FormGroup({
+    firstName: new FormControl(''),
+    lastName: new FormControl(''),
+    email: new FormControl(''),
+  });
+
   constructor() {
     const housingLocationId = Number(this.route.snapshot.params['id']);
-    this.housingLocation =
-      this.housingService.getHousingLocationById(housingLocationId);
+
+    this.housingService
+      .getHousingLocationById(housingLocationId)
+      .then((location) => {
+        this.housingLocation = location;
+      });
+  }
+
+  submitApplication() {
+    this.housingService.submitApplication(
+      this.applyForm.value.firstName ?? '',
+      this.applyForm.value.lastName ?? '',
+      this.applyForm.value.email ?? ''
+    );
   }
 }
